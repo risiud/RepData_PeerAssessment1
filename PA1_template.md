@@ -1,26 +1,45 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-subtitle: "D Risius"
-output: 
-  html_document:
-    keep_md: true
----
+# Reproducible Research: Peer Assessment 1
+D Risius  
+
 
 ## Loading and preprocessing the data
-```{r, echo=FALE}
+
+```r
 setwd("~/Data_Science_Specialization/5_ReproducibleResearch/CourseProj1/RepData_PeerAssessment1")
-```
-```{r, echo=TRUE}
+
 stepData <- read.csv("activity/activity.csv")
 head(stepData)
+```
+
+```
+##   steps       date interval
+## 1    NA 2012-10-01        0
+## 2    NA 2012-10-01        5
+## 3    NA 2012-10-01       10
+## 4    NA 2012-10-01       15
+## 5    NA 2012-10-01       20
+## 6    NA 2012-10-01       25
+```
+
+```r
 str(stepData) # date is a factor we want to change to date
+```
+
+```
+## 'data.frame':	17568 obs. of  3 variables:
+##  $ steps   : int  NA NA NA NA NA NA NA NA NA NA ...
+##  $ date    : Factor w/ 61 levels "2012-10-01","2012-10-02",..: 1 1 1 1 1 1 1 1 1 1 ...
+##  $ interval: int  0 5 10 15 20 25 30 35 40 45 ...
+```
+
+```r
 stepData$date <- as.Date(stepData$date)
 stepData$interval <- as.numeric(stepData$interval)
 ```
 
 ## What is mean total number of steps taken per day?
-```{r, echo=TRUE}
-#make an array of total steps by each day
+
+```r
 x <- tapply(stepData$steps,stepData$date, FUN = sum) #by steps by day
 
 #make a data frame of daily steps
@@ -31,14 +50,13 @@ text(x = 0, y= 25,paste("Mean Daily Steps= ", round(mean(x, na.rm = TRUE),1),
      sep=""), pos = 4)
 text(x = 0, y= 23,paste("Median Daily Steps= ", round(median(x, na.rm = TRUE),0), 
                         sep=""), pos = 4)
-dev.copy(png, file = "")
-dev.off()
 ```
-From the histogram we can see that the fitbit user typically walks between ten to fifteen thousand daily steps in a day.
+
+![](PA1_template_files/figure-html/unnamed-chunk-2-1.png)
 
 ## What is the average daily activity pattern?
-For this question, the ggplot2 package was used. Again, the tapply function was used to get the mean from each interval.  Since ggplot won't recognize an array, the data needed to be converted into a data frame prior to plotting.
-```{r, echo = TRUE}
+
+```r
 library(ggplot2)
 y <- tapply(stepData$steps,stepData$interval, FUN = mean, na.rm = T) #by steps by day
 intervalMeans <- data.frame(interval = as.numeric(names(y)), steps = as.vector(y))
@@ -51,19 +69,37 @@ g <- g + geom_line(col = "steelblue") +
         maxStep, " steps" , sep=""), x = 1500, y = 200, size = 7, colour = "red") +
    labs(x = "Daily Interval") + #add labels
    labs(y = "Number of Average Steps") +
-   labs(title = "Average Daily Steps By Inteval", size = 10) +
+   labs(title = "Average Daily Steps By Inteval", size = 20) +
    xlim(0,2400)
 g
 ```
 
-The plot shows that steps tend to spike in the 800 interval range every day and the largest average steps per interval occurs on interval 835. 
+![](PA1_template_files/figure-html/unnamed-chunk-3-1.png)
 
 ## Imputing missing values
 
-To impute missing values in the original data set, the overall interval means were used.  To achieve this, the original data set was first merged with the summary data set of interval means.  This creates a new column with the interval means.  Next, the missing step values are identified and imputed with the mean interval values.   
-
-```{r, echo = TRUE}
+```r
 library(dplyr)
+```
+
+```
+## 
+## Attaching package: 'dplyr'
+```
+
+```
+## The following objects are masked from 'package:stats':
+## 
+##     filter, lag
+```
+
+```
+## The following objects are masked from 'package:base':
+## 
+##     intersect, setdiff, setequal, union
+```
+
+```r
 z <- stepData$steps
 #impute the mean in a new dataset to get the missing numbers and then sort so its same as original
 imputeMeans <- merge(stepData, intervalMeans, by = "interval")
@@ -73,12 +109,9 @@ imputeMeans$steps[missing] <- imputeMeans$intervalMean[missing]
 imputeMeans <- arrange(imputeMeans, date, interval )
 ```
 
+## What is mean total number of steps taken per day?
 
-# What is the new mean total number of steps taken per day for the imputed data?
-
-The figure below shows that imputing missing values did not significantly change the overall mean or median of the daily steps.
-
-```{r, echo = TRUE}
+```r
 x <- tapply(imputeMeans$steps,imputeMeans$date, FUN = sum) #by steps by day
 
 #make a data frame of daily steps using the imputted data
@@ -91,8 +124,10 @@ text(x = 0, y= 23,paste("Median Daily Steps= ", round(median(x, na.rm = TRUE),0)
                         sep=""), pos = 4)
 ```
 
+![](PA1_template_files/figure-html/unnamed-chunk-5-1.png)
 ## Are there differences in activity patterns between weekdays and weekends?
-```{r, echo = TRUE}
+
+```r
 imputeMeans$day <- weekdays(imputeMeans$date)
 imputeMeans$dayClass <- "weekday"
 weekend <- imputeMeans$day == "Saturday" | imputeMeans$day == "Sunday"
@@ -103,10 +138,12 @@ maxInt <- intervalMeans[which.max(intervalMeans2$steps),1]
 maxStep <- round(max(intervalMeans$steps),1)
 g <- ggplot(intervalMeans2, aes(x=interval, y=steps))
 g <- g + facet_grid(dayClass~ . ) + geom_line(col = "steelblue") + 
+  geom_vline(xintercept= maxInt, col = "red") +
   labs(x = "Daily Interval") + #add labels
   labs(y = "Number of Average Steps") +
   labs(title = "Average Daily Steps By Inteval", size = 20) +
   xlim(0,2400)
 g
 ```
-When we compare the weekday and weekend charts we can see a few key differences.  First, during the weekend, the user takes a little while to get moving (around interval 700) but once they get moving, they are fairly active compared to the weekdays until they become inactive at around interval 2000.  In contrast, during the weekday, the user seems to wake up at around 500, activity spikes at around interval 700 to 900, presumably while they are walking to work or school, then remains fairly inactive the rest of the day compared to the weekend.
+
+![](PA1_template_files/figure-html/unnamed-chunk-6-1.png)
